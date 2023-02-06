@@ -67,6 +67,33 @@ public class ToolSet {
     }
 
     /**
+     * Using the best tool on the hotbar, how fast we can mine this block
+     *
+     * @param state the blockstate to be mined
+     * @return the speed of how fast we'll mine it. 1/(time in ticks)
+     */
+    public double getStrVsBlock(BlockState state) {
+        return breakStrengthCache.computeIfAbsent(state.getBlock(), backendCalculation);
+    }
+
+    /**
+     * Evaluate the material cost of a possible tool. The priority matches the
+     * harvest level order; there is a chance for multiple at the same with modded tools
+     * but in that case we don't really care.
+     *
+     * @param itemStack a possibly empty ItemStack
+     * @return values from 0 up
+     */
+    private int getMaterialCost(ItemStack itemStack) {
+        if (itemStack.getItem() instanceof TieredItem) {
+            TieredItem tool = (TieredItem) itemStack.getItem();
+            return tool.getTier().getLevel();
+        } else {
+            return -1;
+        }
+    }
+
+    /**
      * Calculates how long would it take to mine the specified block given the best tool
      * in this toolset is used. A negative value is returned if the specified block is unbreakable.
      *
@@ -99,33 +126,6 @@ public class ToolSet {
     }
 
     /**
-     * Using the best tool on the hotbar, how fast we can mine this block
-     *
-     * @param state the blockstate to be mined
-     * @return the speed of how fast we'll mine it. 1/(time in ticks)
-     */
-    public double getStrVsBlock(BlockState state) {
-        return breakStrengthCache.computeIfAbsent(state.getBlock(), backendCalculation);
-    }
-
-    /**
-     * Evaluate the material cost of a possible tool. The priority matches the
-     * harvest level order; there is a chance for multiple at the same with modded tools
-     * but in that case we don't really care.
-     *
-     * @param itemStack a possibly empty ItemStack
-     * @return values from 0 up
-     */
-    private int getMaterialCost(ItemStack itemStack) {
-        if (itemStack.getItem() instanceof TieredItem) {
-            TieredItem tool = (TieredItem) itemStack.getItem();
-            return tool.getTier().getLevel();
-        } else {
-            return -1;
-        }
-    }
-
-    /**
      * Calculate which tool on the hotbar is best for mining, depending on an override setting,
      * related to auto tool movement cost, it will either return current selected slot, or the best slot.
      *
@@ -135,10 +135,6 @@ public class ToolSet {
 
     public int getBestSlot(Block b, boolean preferSilkTouch) {
         return getBestSlot(b, preferSilkTouch, false);
-    }
-
-    public boolean hasSilkTouch(ItemStack stack) {
-        return EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, stack) > 0;
     }
 
     public int getBestSlot(Block b, boolean preferSilkTouch, boolean pathingCalculation) {
@@ -186,10 +182,6 @@ public class ToolSet {
         return best;
     }
 
-    private double avoidanceMultiplier(Block b) {
-        return Baritone.settings().blocksToAvoidBreaking.value.contains(b) ? Baritone.settings().avoidBreakingMultiplier.value : 1;
-    }
-
     /**
      * Calculate how effectively a block can be destroyed
      *
@@ -199,6 +191,14 @@ public class ToolSet {
     private double getBestDestructionTime(Block b) {
         ItemStack stack = player.getInventory().getItem(getBestSlot(b, false, true));
         return calculateSpeedVsBlock(stack, b.defaultBlockState()) * avoidanceMultiplier(b);
+    }
+
+    public boolean hasSilkTouch(ItemStack stack) {
+        return EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, stack) > 0;
+    }
+
+    private double avoidanceMultiplier(Block b) {
+        return Baritone.settings().blocksToAvoidBreaking.value.contains(b) ? Baritone.settings().avoidBreakingMultiplier.value : 1;
     }
 
     /**

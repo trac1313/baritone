@@ -53,6 +53,22 @@ public class MovementTraverse extends Movement {
         super(baritone, from, to, new BetterBlockPos[]{to.above(), to}, to.below());
     }
 
+    @Override
+    public void reset() {
+        super.reset();
+        wasTheBridgeBlockAlwaysThere = true;
+    }
+
+    @Override
+    public double calculateCost(CalculationContext context) {
+        return cost(context, src.x, src.y, src.z, dest.x, dest.z);
+    }
+
+    @Override
+    protected Set<BetterBlockPos> calculateValidPositions() {
+        return ImmutableSet.of(src, dest); // src.above means that we don't get caught in an infinite loop in water
+    }
+
     public static double cost(CalculationContext context, int x, int y, int z, int destX, int destZ) {
         BlockState pb0 = context.get(destX, y + 1, destZ);
         BlockState pb1 = context.get(destX, y, destZ);
@@ -140,22 +156,6 @@ public class MovementTraverse extends Movement {
     }
 
     @Override
-    public void reset() {
-        super.reset();
-        wasTheBridgeBlockAlwaysThere = true;
-    }
-
-    @Override
-    public double calculateCost(CalculationContext context) {
-        return cost(context, src.x, src.y, src.z, dest.x, dest.z);
-    }
-
-    @Override
-    protected Set<BetterBlockPos> calculateValidPositions() {
-        return ImmutableSet.of(src, dest);
-    }
-
-    @Override
     public MovementState updateState(MovementState state) {
         super.updateState(state);
         BlockState pb0 = BlockStateInterface.get(ctx, positionsToBreak[0]);
@@ -236,6 +236,7 @@ public class MovementTraverse extends Movement {
         if (feet.getY() != dest.getY() && !ladder) {
             logDebug("Wrong Y coordinate");
             if (feet.getY() < dest.getY()) {
+                System.out.println("In movement traverse");
                 return state.setInput(Input.JUMP, true);
             }
             return state;

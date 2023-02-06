@@ -108,27 +108,6 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
         locations = null;
     }
 
-    private boolean isPlantable(ItemStack stack) {
-        return FARMLAND_PLANTABLE.contains(stack.getItem());
-    }
-
-    private boolean readyForHarvest(Level world, BlockPos pos, BlockState state) {
-        for (Harvest harvest : Harvest.values()) {
-            if (harvest.block == state.getBlock()) {
-                return harvest.readyToHarvest(world, pos, state);
-            }
-        }
-        return false;
-    }
-
-    private boolean isNetherWart(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem().equals(Items.NETHER_WART);
-    }
-
-    private boolean isBoneMeal(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem().equals(Items.BONE_MEAL);
-    }
-
     private enum Harvest {
         WHEAT((CropBlock) Blocks.WHEAT),
         CARROTS((CropBlock) Blocks.CARROTS),
@@ -171,6 +150,27 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
         public boolean readyToHarvest(Level world, BlockPos pos, BlockState state) {
             return readyToHarvest.test(state);
         }
+    }
+
+    private boolean readyForHarvest(Level world, BlockPos pos, BlockState state) {
+        for (Harvest harvest : Harvest.values()) {
+            if (harvest.block == state.getBlock()) {
+                return harvest.readyToHarvest(world, pos, state);
+            }
+        }
+        return false;
+    }
+
+    private boolean isPlantable(ItemStack stack) {
+        return FARMLAND_PLANTABLE.contains(stack.getItem());
+    }
+
+    private boolean isBoneMeal(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem().equals(Items.BONE_MEAL);
+    }
+
+    private boolean isNetherWart(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem().equals(Items.NETHER_WART);
     }
 
     @Override

@@ -57,6 +57,7 @@ public class CalculationContext {
     public final boolean hasWaterBucket;
     public final boolean hasThrowaway;
     public final boolean canSprint;
+    protected final double placeBlockCost; // protected because you should call the function instead
     public final boolean allowBreak;
     public final List<Block> allowBreakAnyway;
     public final boolean allowParkour;
@@ -71,11 +72,10 @@ public class CalculationContext {
     public final int maxFallHeightBucket;
     public final double waterWalkSpeed;
     public final double breakBlockAdditionalCost;
-    public final double walkOnWaterOnePenalty;
-    public final BetterWorldBorder worldBorder;
-    protected final double placeBlockCost; // protected because you should call the function instead
     public double backtrackCostFavoringCoefficient;
     public double jumpPenalty;
+    public final double walkOnWaterOnePenalty;
+    public final BetterWorldBorder worldBorder;
 
     public CalculationContext(IBaritone baritone) {
         this(baritone, false);

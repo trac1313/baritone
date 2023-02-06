@@ -69,8 +69,6 @@ public class CreateDistTask extends BaritoneGradleTask {
         Files.write(getRootRelativeFile("dist/checksums.txt"), shasum);
     }
 
-    private static final byte[] HEX_ARRAY = "0123456789ABCDEF".getBytes(StandardCharsets.US_ASCII);
-
     private static String getFileName(Path p) {
         return p.getFileName().toString();
     }
@@ -86,6 +84,8 @@ public class CreateDistTask extends BaritoneGradleTask {
             throw new IllegalStateException(e);
         }
     }
+
+    private static final byte[] HEX_ARRAY = "0123456789ABCDEF".getBytes(StandardCharsets.US_ASCII);
 
     public static String bytesToHex(byte[] bytes) {
         byte[] hexChars = new byte[bytes.length * 2];

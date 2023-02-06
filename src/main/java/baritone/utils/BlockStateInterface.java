@@ -43,13 +43,14 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 public class BlockStateInterface {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
-    public final BlockPos.MutableBlockPos isPassableBlockPos;
     protected final Level world;
     private final ClientChunkCache provider;
+    public final BlockPos.MutableBlockPos isPassableBlockPos;
     public final BlockGetter access;
     public final BetterWorldBorder worldBorder;
-    private final WorldData worldData;
+
     private LevelChunk prev = null;
+    private final WorldData worldData;
 
     private final boolean useTheRealWorld;
     private CachedRegion prevCached = null;
@@ -79,10 +80,6 @@ public class BlockStateInterface {
         this.access = new BlockStateInterfaceAccessWrapper(this);
     }
 
-    public static Block getBlock(IPlayerContext ctx, BlockPos pos) { // won't be called from the pathing thread because the pathing thread doesn't make a single blockpos pog
-        return get(ctx, pos).getBlock();
-    }
-
     // get the block at x,y,z from this chunk WITHOUT creating a single blockpos object
     public static BlockState getFromChunk(LevelChunk chunk, int x, int y, int z) {
         LevelChunkSection section = chunk.getSections()[y >> 4];
@@ -90,6 +87,10 @@ public class BlockStateInterface {
             return AIR;
         }
         return section.getBlockState(x & 15, y & 15, z & 15);
+    }
+
+    public static Block getBlock(IPlayerContext ctx, BlockPos pos) { // won't be called from the pathing thread because the pathing thread doesn't make a single blockpos pog
+        return get(ctx, pos).getBlock();
     }
 
     public static BlockState get(IPlayerContext ctx, BlockPos pos) {

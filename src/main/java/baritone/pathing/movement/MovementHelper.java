@@ -563,7 +563,7 @@ public interface MovementHelper extends ActionCosts, Helper {
 
     static boolean isBlockNormalCube(BlockState state) {
         Block block = state.getBlock();
-        if (block instanceof BambooBlock
+        if (block instanceof BambooStalkBlock
                 || block instanceof MovingPistonBlock
                 || block instanceof ScaffoldingBlock
                 || block instanceof ShulkerBoxBlock
@@ -636,7 +636,7 @@ public interface MovementHelper extends ActionCosts, Helper {
 
     static boolean isTransparent(Block b) {
 
-        return b == Blocks.AIR ||
+        return b instanceof AirBlock ||
                 b == Blocks.LAVA ||
                 b == Blocks.WATER;
     }

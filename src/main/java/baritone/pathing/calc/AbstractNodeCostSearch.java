@@ -41,16 +41,23 @@ public abstract class AbstractNodeCostSearch implements IPathFinder, Helper {
     protected final int startZ;
 
     protected final Goal goal;
-    protected final PathNode[] bestSoFar = new PathNode[COEFFICIENTS.length];
+
     private final CalculationContext context;
+
     /**
      * @see <a href="https://github.com/cabaletta/baritone/issues/107">Issue #107</a>
      */
     private final Long2ObjectOpenHashMap<PathNode> map;
+
     protected PathNode startNode;
+
     protected PathNode mostRecentConsidered;
-    protected boolean cancelRequested;
+
+    protected final PathNode[] bestSoFar = new PathNode[COEFFICIENTS.length];
+
     private volatile boolean isFinished;
+
+    protected boolean cancelRequested;
 
     /**
      * This is really complicated and hard to explain. I wrote a comment in the old version of MineBot but it was so

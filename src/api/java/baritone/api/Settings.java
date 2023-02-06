@@ -1049,7 +1049,7 @@ public final class Settings {
     /**
      * What Y level to go to for legit strip mining
      */
-    public final Setting<Integer> legitMineYLevel = new Setting<>(11);
+    public final Setting<Integer> legitMineYLevel = new Setting<>(-59);
 
     /**
      * Magically see ores that are separated diagonally from existing ores. Basically like mining around the ores that it finds
@@ -1287,8 +1287,8 @@ public final class Settings {
 
     public final class Setting<T> {
 
-        public final T defaultValue;
         public T value;
+        public final T defaultValue;
         private String name;
 
         @SuppressWarnings("unchecked")

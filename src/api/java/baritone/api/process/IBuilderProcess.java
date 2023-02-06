@@ -42,7 +42,13 @@ public interface IBuilderProcess extends IBaritoneProcess {
      */
     void build(String name, ISchematic schematic, Vec3i origin);
 
-    boolean isFromAltoclef();
+    Vec3i getSchemSize();
+
+    void popStack();
+
+    boolean clearState();
+
+    boolean isFromAltoclefFinished();
 
     /**
      * Requests a build for the specified schematic, labeled as specified, with the specified origin.
@@ -59,23 +65,13 @@ public interface IBuilderProcess extends IBaritoneProcess {
         return build(schematicFile, file, origin);
     }
 
-    void build(String name, ISchematic schematic, Vec3i origin, boolean fromAltoclef);
-
-    boolean build(String name, File schematic, Vec3i origin, boolean fromAltoclef);
-
     void buildOpenSchematic();
+
+    void buildOpenLitematic(int i);
 
     void pause();
 
     boolean isPaused();
-
-    Vec3i getSchemSize();
-
-    void popStack();
-
-    boolean clearState();
-
-    boolean isFromAltoclefFinished();
 
     void resume();
 
@@ -91,6 +87,12 @@ public interface IBuilderProcess extends IBaritoneProcess {
      * cause it to give up. This is updated every tick, but only while the builder process is active.
      */
     List<BlockState> getApproxPlaceable();
+
+    boolean isFromAltoclef();
+
+    void build(String name, ISchematic schematic, Vec3i origin, boolean fromAltoclef);
+
+    boolean build(String name, File schematic, Vec3i origin, boolean fromAltoclef);
 
     void noteInsert(BlockPos pos);
 }

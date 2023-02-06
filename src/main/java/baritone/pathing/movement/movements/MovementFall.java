@@ -58,18 +58,6 @@ public class MovementFall extends Movement {
         super(baritone, src, dest, MovementFall.buildPositionsToBreak(src, dest));
     }
 
-    private static BetterBlockPos[] buildPositionsToBreak(BetterBlockPos src, BetterBlockPos dest) {
-        BetterBlockPos[] toBreak;
-        int diffX = src.getX() - dest.getX();
-        int diffZ = src.getZ() - dest.getZ();
-        int diffY = Math.abs(src.getY() - dest.getY());
-        toBreak = new BetterBlockPos[diffY + 2];
-        for (int i = 0; i < toBreak.length; i++) {
-            toBreak[i] = new BetterBlockPos(src.getX() - diffX, src.getY() + 1 - i, src.getZ() - diffZ);
-        }
-        return toBreak;
-    }
-
     @Override
     public double calculateCost(CalculationContext context) {
         MutableMoveResult result = new MutableMoveResult();
@@ -80,12 +68,6 @@ public class MovementFall extends Movement {
         return result.cost;
     }
 
-    private boolean willPlaceBucket() {
-        CalculationContext context = new CalculationContext(baritone);
-        MutableMoveResult result = new MutableMoveResult();
-        return MovementDescend.dynamicFallCost(context, src.x, src.y, src.z, dest.x, dest.z, 0, context.get(dest.x, src.y - 2, dest.z), result);
-    }
-
     @Override
     protected Set<BetterBlockPos> calculateValidPositions() {
         Set<BetterBlockPos> set = new HashSet<>();
@@ -94,6 +76,18 @@ public class MovementFall extends Movement {
             set.add(dest.above(y));
         }
         return set;
+    }
+
+    private static BetterBlockPos[] buildPositionsToBreak(BetterBlockPos src, BetterBlockPos dest) {
+        BetterBlockPos[] toBreak;
+        int diffX = src.getX() - dest.getX();
+        int diffZ = src.getZ() - dest.getZ();
+        int diffY = Math.abs(src.getY() - dest.getY());
+        toBreak = new BetterBlockPos[diffY + 2];
+        for (int i = 0; i < toBreak.length; i++) {
+            toBreak[i] = new BetterBlockPos(src.getX() - diffX, src.getY() + 1 - i, src.getZ() - diffZ);
+        }
+        return toBreak;
     }
 
     @Override
@@ -173,13 +167,6 @@ public class MovementFall extends Movement {
         return state;
     }
 
-    @Override
-    public boolean safeToCancel(MovementState state) {
-        // if we haven't started walking off the edge yet, or if we're in the process of breaking blocks before doing the fall
-        // then it's safe to cancel this
-        return ctx.playerFeet().equals(src) || state.getStatus() != MovementStatus.RUNNING;
-    }
-
     private Direction avoid() {
         for (int i = 0; i < 15; i++) {
             BlockState state = ctx.world().getBlockState(ctx.playerFeet().below(i));
@@ -188,6 +175,19 @@ public class MovementFall extends Movement {
             }
         }
         return null;
+    }
+
+    private boolean willPlaceBucket() {
+        CalculationContext context = new CalculationContext(baritone);
+        MutableMoveResult result = new MutableMoveResult();
+        return MovementDescend.dynamicFallCost(context, src.x, src.y, src.z, dest.x, dest.z, 0, context.get(dest.x, src.y - 2, dest.z), result);
+    }
+
+    @Override
+    public boolean safeToCancel(MovementState state) {
+        // if we haven't started walking off the edge yet, or if we're in the process of breaking blocks before doing the fall
+        // then it's safe to cancel this
+        return ctx.playerFeet().equals(src) || state.getStatus() != MovementStatus.RUNNING;
     }
 
     @Override

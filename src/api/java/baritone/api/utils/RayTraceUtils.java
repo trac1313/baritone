@@ -27,9 +27,7 @@ import net.minecraft.world.phys.Vec3;
  * @since 8/25/2018
  */
 public final class RayTraceUtils {
-
     public static ClipContext.Fluid fluidHandling = ClipContext.Fluid.NONE;
-
     private RayTraceUtils() {
     }
 

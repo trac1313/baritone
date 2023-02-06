@@ -7,7 +7,6 @@
     "maxShiftBy": 2,
     "defaultRequire": 1
   },
-  "plugin": "baritone.launch.MixinPlugin",
   "client": [
     "MixinChunkArray",
     "MixinClientChunkProvider",
@@ -18,11 +17,13 @@
     "MixinEntityRenderManager",
     "MixinItemStack",
     "MixinLivingEntity",
+    "MixinLongArrayNBT",
     "MixinLootContext",
     "MixinMinecraft",
     "MixinNetworkManager",
     "MixinPlayerController",
     "MixinScreen",
     "MixinWorldRenderer"
-  ]
+  ],
+  "plugin": "baritone.launch.FabricMixinPlugin"
 }

@@ -51,9 +51,11 @@ import baritone.utils.schematic.schematica.SchematicaHelper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BlockItem;
@@ -310,6 +312,11 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         return true;
     }
 
+    @Override
+    public boolean build(String schematicFile, BlockPos origin) {
+        return IBuilderProcess.super.build(schematicFile, origin);
+    }
+
     public void resume() {
         if (!this.stateStack.isEmpty()) {
             popStack();
@@ -345,6 +352,11 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         } else {
             logDirect("Schematica is not present");
         }
+    }
+
+    @Override
+    public void buildOpenLitematic(int i) {
+
     }
 
     public void clearArea(BlockPos corner1, BlockPos corner2) {
@@ -1060,6 +1072,76 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         return new GoalComposite(toBreak.toArray(new Goal[0]));
     }
 
+    @Override
+    public void logToast(Component title, Component message) {
+        super.logToast(title, message);
+    }
+
+    @Override
+    public void logToast(String title, String message) {
+        super.logToast(title, message);
+    }
+
+    @Override
+    public void logToast(String message) {
+        super.logToast(message);
+    }
+
+    @Override
+    public void logNotification(String message) {
+        super.logNotification(message);
+    }
+
+    @Override
+    public void logNotification(String message, boolean error) {
+        super.logNotification(message, error);
+    }
+
+    @Override
+    public void logNotificationDirect(String message) {
+        super.logNotificationDirect(message);
+    }
+
+    @Override
+    public void logNotificationDirect(String message, boolean error) {
+        super.logNotificationDirect(message, error);
+    }
+
+    @Override
+    public void logDebug(String message) {
+        super.logDebug(message);
+    }
+
+    @Override
+    public void logDirect(boolean logAsToast, Component... components) {
+        super.logDirect(logAsToast, components);
+    }
+
+    @Override
+    public void logDirect(Component... components) {
+        super.logDirect(components);
+    }
+
+    @Override
+    public void logDirect(String message, ChatFormatting color, boolean logAsToast) {
+        super.logDirect(message, color, logAsToast);
+    }
+
+    @Override
+    public void logDirect(String message, ChatFormatting color) {
+        super.logDirect(message, color);
+    }
+
+    @Override
+    public void logDirect(String message, boolean logAsToast) {
+        super.logDirect(message, logAsToast);
+    }
+
+    @Override
+    public void logDirect(String message) {
+        super.logDirect(message);
+    }
+
     public static class Placement {
 
         private final int hotbarSelection;
@@ -1204,6 +1286,16 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         fromAltoclef = false;
         active = false;
         blockBreakHistory.clear();
+    }
+
+    @Override
+    public double priority() {
+        return super.priority();
+    }
+
+    @Override
+    public String displayName() {
+        return super.displayName();
     }
 
     public static class GoalPlace extends GoalBlock {

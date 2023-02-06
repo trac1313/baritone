@@ -27,7 +27,7 @@ import baritone.api.command.datatypes.NearbyPlayer;
 import baritone.api.command.exception.CommandErrorMessageException;
 import baritone.api.command.exception.CommandException;
 import baritone.api.command.helpers.TabCompleteHelper;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -85,7 +85,7 @@ public class FollowCommand extends Command {
             } else {
                 logDirect("Following these types of entities:");
                 classes.stream()
-                        .map(Registry.ENTITY_TYPE::getKey)
+                        .map(BuiltInRegistries.ENTITY_TYPE::getKey)
                         .map(Objects::requireNonNull)
                         .map(ResourceLocation::toString)
                         .forEach(this::logDirect);
