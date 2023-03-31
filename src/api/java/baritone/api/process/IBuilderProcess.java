@@ -42,14 +42,6 @@ public interface IBuilderProcess extends IBaritoneProcess {
      */
     void build(String name, ISchematic schematic, Vec3i origin);
 
-    Vec3i getSchemSize();
-
-    void popStack();
-
-    boolean clearState();
-
-    boolean isFromAltoclefFinished();
-
     /**
      * Requests a build for the specified schematic, labeled as specified, with the specified origin.
      *
@@ -73,13 +65,21 @@ public interface IBuilderProcess extends IBaritoneProcess {
 
     boolean isPaused();
 
+    Vec3i getSchemSize();
+
+    void popStack();
+
+    boolean clearState();
+
+    boolean isFromAltoclefFinished();
+
     void resume();
 
     void clearArea(BlockPos corner1, BlockPos corner2);
 
-    void reset();
+    void build(String name, ISchematic schematic, Vec3i origin, boolean fromAltoclef);
 
-    Map<BlockState, Integer> getMissing();
+    boolean build(String name, File schematic, Vec3i origin, boolean fromAltoclef);
 
     /**
      * @return A list of block states that are estimated to be placeable by this builder process. You can use this in
@@ -90,9 +90,9 @@ public interface IBuilderProcess extends IBaritoneProcess {
 
     boolean isFromAltoclef();
 
-    void build(String name, ISchematic schematic, Vec3i origin, boolean fromAltoclef);
-
-    boolean build(String name, File schematic, Vec3i origin, boolean fromAltoclef);
-
     void noteInsert(BlockPos pos);
+
+    void reset();
+
+    Map<BlockState, Integer> getMissing();
 }

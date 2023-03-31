@@ -193,12 +193,12 @@ public class ToolSet {
         return calculateSpeedVsBlock(stack, b.defaultBlockState()) * avoidanceMultiplier(b);
     }
 
-    public boolean hasSilkTouch(ItemStack stack) {
-        return EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, stack) > 0;
-    }
-
     private double avoidanceMultiplier(Block b) {
         return Baritone.settings().blocksToAvoidBreaking.value.contains(b) ? Baritone.settings().avoidBreakingMultiplier.value : 1;
+    }
+
+    public boolean hasSilkTouch(ItemStack stack) {
+        return EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, stack) > 0;
     }
 
     /**

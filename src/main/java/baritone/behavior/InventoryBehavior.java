@@ -172,8 +172,7 @@ public final class InventoryBehavior extends Behavior {
     }
 
     public boolean throwaway(boolean select, Predicate<? super ItemStack> desired, boolean allowInventory) {
-        if (AltoClefSettings.getInstance().isInteractionPaused())
-            return false;
+        if (AltoClefSettings.getInstance().isInteractionPaused()) return false;
         LocalPlayer p = ctx.player();
         NonNullList<ItemStack> inv = p.getInventory().items;
         for (int i = 0; i < 9; i++) {

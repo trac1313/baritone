@@ -396,45 +396,6 @@ public class PathExecutor implements IPathExecutor, Helper {
         return next instanceof MovementDiagonal && Baritone.settings().allowOvershootDiagonalDescend.value;
     }
 
-    private Tuple<Vec3, BlockPos> overrideFall(MovementFall movement) {
-        Vec3i dir = movement.getDirection();
-        if (dir.getY() < -3) {
-            return null;
-        }
-        if (!movement.toBreakCached.isEmpty()) {
-            return null; // it's breaking
-        }
-        Vec3i flatDir = new Vec3i(dir.getX(), 0, dir.getZ());
-        int i;
-        outer:
-        for (i = pathPosition + 1; i < path.length() - 1 && i < pathPosition + 3; i++) {
-            IMovement next = path.movements().get(i);
-            if (!(next instanceof MovementTraverse)) {
-                break;
-            }
-            if (!flatDir.equals(next.getDirection())) {
-                break;
-            }
-            for (int y = next.getDest().y; y <= movement.getSrc().y + 1; y++) {
-                BlockPos chk = new BlockPos(next.getDest().x, y, next.getDest().z);
-                if (!MovementHelper.fullyPassable(ctx, chk)) {
-                    break outer;
-                }
-            }
-            if (!MovementHelper.canWalkOn(ctx, next.getDest().below())) {
-                break;
-            }
-        }
-        i--;
-        if (i == pathPosition) {
-            return null; // no valid extension exists
-        }
-        double len = i - pathPosition - 0.4;
-        return new Tuple<>(
-                new Vec3(flatDir.getX() * len + movement.getDest().x + 0.5, movement.getDest().y, flatDir.getZ() * len + movement.getDest().z + 0.5),
-                movement.getDest().offset(flatDir.getX() * (i - pathPosition), 0, flatDir.getZ() * (i - pathPosition)));
-    }
-
     private Tuple<Double, BlockPos> closestPathPos(IPath path) {
         double best = -1;
         BlockPos bestPos = null;
@@ -457,7 +418,7 @@ public class PathExecutor implements IPathExecutor, Helper {
         behavior.baritone.getInputOverrideHandler().setInputForceState(Input.SPRINT, false);
 
         // first and foremost, if allowSprint is off, or if we don't have enough hunger, don't try and sprint
-        if (!new CalculationContext(behavior.baritone).canSprint) {
+        if (!new CalculationContext(behavior.baritone, false).canSprint) {
             return false;
         }
         IMovement current = path.movements().get(pathPosition);
@@ -487,6 +448,26 @@ public class PathExecutor implements IPathExecutor, Helper {
         // however, descend and ascend don't request sprinting, because they don't know the context of what movement comes after it
         if (current instanceof MovementDescend) {
 
+            if (pathPosition < path.length() - 2) {
+                // keep this out of onTick, even if that means a tick of delay before it has an effect
+                IMovement next = path.movements().get(pathPosition + 1);
+                if (MovementHelper.canUseFrostWalker(ctx, next.getDest().below())) {
+                    // frostwalker only works if you cross the edge of the block on ground so in some cases we may not overshoot
+                    // Since MovementDescend can't know the next movement we have to tell it
+                    if (next instanceof MovementTraverse || next instanceof MovementParkour) {
+                        boolean couldPlaceInstead = Baritone.settings().allowPlace.value && behavior.baritone.getInventoryBehavior().hasGenericThrowaway() && next instanceof MovementParkour; // traverse doesn't react fast enough
+                        // this is true if the next movement does not ascend or descends and goes into the same cardinal direction (N-NE-E-SE-S-SW-W-NW) as the descend
+                        // in that case current.getDirection() is e.g. (0, -1, 1) and next.getDirection() is e.g. (0, 0, 3) so the cross product of (0, 0, 1) and (0, 0, 3) is taken, which is (0, 0, 0) because the vectors are colinear (don't form a plane)
+                        // since movements in exactly the opposite direction (e.g. descend (0, -1, 1) and traverse (0, 0, -1)) would also pass this check we also have to rule out that case
+                        // we can do that by adding the directions because traverse is always 1 long like descend and parkour can't jump through current.getSrc().down()
+                        boolean sameFlatDirection = !current.getDirection().above().offset(next.getDirection()).equals(BlockPos.ZERO)
+                                && current.getDirection().above().cross(next.getDirection()).equals(BlockPos.ZERO); // here's why you learn maths in school
+                        if (sameFlatDirection && !couldPlaceInstead) {
+                            ((MovementDescend) current).forceSafeMode();
+                        }
+                    }
+                }
+            }
             if (((MovementDescend) current).safeMode() && !((MovementDescend) current).skipToAscend()) {
                 logDebug("Sprinting would be unsafe");
                 return false;
@@ -559,6 +540,45 @@ public class PathExecutor implements IPathExecutor, Helper {
             }
         }
         return false;
+    }
+
+    private Tuple<Vec3, BlockPos> overrideFall(MovementFall movement) {
+        Vec3i dir = movement.getDirection();
+        if (dir.getY() < -3) {
+            return null;
+        }
+        if (!movement.toBreakCached.isEmpty()) {
+            return null; // it's breaking
+        }
+        Vec3i flatDir = new Vec3i(dir.getX(), 0, dir.getZ());
+        int i;
+        outer:
+        for (i = pathPosition + 1; i < path.length() - 1 && i < pathPosition + 3; i++) {
+            IMovement next = path.movements().get(i);
+            if (!(next instanceof MovementTraverse)) {
+                break;
+            }
+            if (!flatDir.equals(next.getDirection())) {
+                break;
+            }
+            for (int y = next.getDest().y; y <= movement.getSrc().y + 1; y++) {
+                BlockPos chk = new BlockPos(next.getDest().x, y, next.getDest().z);
+                if (!MovementHelper.fullyPassable(ctx, chk)) {
+                    break outer;
+                }
+            }
+            if (!MovementHelper.canWalkOn(ctx, next.getDest().below())) {
+                break;
+            }
+        }
+        i--;
+        if (i == pathPosition) {
+            return null; // no valid extension exists
+        }
+        double len = i - pathPosition - 0.4;
+        return new Tuple<>(
+                new Vec3(flatDir.getX() * len + movement.getDest().x + 0.5, movement.getDest().y, flatDir.getZ() * len + movement.getDest().z + 0.5),
+                movement.getDest().offset(flatDir.getX() * (i - pathPosition), 0, flatDir.getZ() * (i - pathPosition)));
     }
 
     private void onChangeInPathPosition() {

@@ -177,17 +177,17 @@ public class MovementFall extends Movement {
         return null;
     }
 
-    private boolean willPlaceBucket() {
-        CalculationContext context = new CalculationContext(baritone);
-        MutableMoveResult result = new MutableMoveResult();
-        return MovementDescend.dynamicFallCost(context, src.x, src.y, src.z, dest.x, dest.z, 0, context.get(dest.x, src.y - 2, dest.z), result);
-    }
-
     @Override
     public boolean safeToCancel(MovementState state) {
         // if we haven't started walking off the edge yet, or if we're in the process of breaking blocks before doing the fall
         // then it's safe to cancel this
         return ctx.playerFeet().equals(src) || state.getStatus() != MovementStatus.RUNNING;
+    }
+
+    private boolean willPlaceBucket() {
+        CalculationContext context = new CalculationContext(baritone);
+        MutableMoveResult result = new MutableMoveResult();
+        return MovementDescend.dynamicFallCost(context, src.x, src.y, src.z, dest.x, dest.z, 0, context.get(dest.x, src.y - 2, dest.z), result);
     }
 
     @Override

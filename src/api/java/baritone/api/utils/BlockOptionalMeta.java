@@ -148,6 +148,10 @@ public final class BlockOptionalMeta {
         return String.format("BlockOptionalMeta{block=%s}", block);
     }
 
+    public static PredicateManager getPredicateManager() {
+        return predicate;
+    }
+
     private static Method getVanillaServerPack;
 
     private static VanillaPackResources getVanillaServerPack() {
@@ -181,6 +185,14 @@ public final class BlockOptionalMeta {
         return lootTables;
     }
 
+    public BlockState getAnyBlockState() {
+        if (blockstates.size() > 0) {
+            return blockstates.iterator().next();
+        }
+
+        return null;
+    }
+
     private static synchronized List<Item> drops(Block b) {
         return drops.computeIfAbsent(b, block -> {
             ResourceLocation lootTableLocation = block.getLootTable();
@@ -207,24 +219,18 @@ public final class BlockOptionalMeta {
         });
     }
 
-    public static PredicateManager getPredicateManager() {
-        return predicate;
-    }
-
-    public BlockState getAnyBlockState() {
-        if (blockstates.size() > 0) {
-            return blockstates.iterator().next();
-        }
-
-        return null;
-    }
-
     private static class ServerLevelStub extends ServerLevel {
         private static Minecraft client = Minecraft.getInstance();
         private static Unsafe unsafe = getUnsafe();
 
         public ServerLevelStub(MinecraftServer $$0, Executor $$1, LevelStorageSource.LevelStorageAccess $$2, ServerLevelData $$3, ResourceKey<Level> $$4, LevelStem $$5, ChunkProgressListener $$6, boolean $$7, long $$8, List<CustomSpawner> $$9, boolean $$10) {
             super($$0, $$1, $$2, $$3, $$4, $$5, $$6, $$7, $$8, $$9, $$10);
+        }
+
+        @Override
+        public FeatureFlagSet enabledFeatures() {
+            assert client.level != null;
+            return client.level.enabledFeatures();
         }
 
         public static ServerLevelStub fastCreate() {
@@ -243,12 +249,6 @@ public final class BlockOptionalMeta {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }
-
-        @Override
-        public FeatureFlagSet enabledFeatures() {
-            assert client.level != null;
-            return client.level.enabledFeatures();
         }
 
     }

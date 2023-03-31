@@ -57,93 +57,50 @@ public class MovementDiagonal extends Movement {
         super(baritone, start, end, new BetterBlockPos[]{dir1, dir1.above(), dir2, dir2.above(), end, end.above()});
     }
 
-    @Override
-    protected boolean safeToCancel(MovementState state) {
-        //too simple. backfill does not work after cornering with this
-        //return MovementHelper.canWalkOn(ctx, ctx.playerFeet().down());
-        LocalPlayer player = ctx.player();
-        double offset = 0.25;
-        double x = player.position().x;
-        double y = player.position().y - 1;
-        double z = player.position().z;
-        //standard
-        if (ctx.playerFeet().equals(src)) {
-            return true;
-        }
-        //both corners are walkable
-        if (MovementHelper.canWalkOn(ctx, new BlockPos(src.x, src.y - 1, dest.z))
-                && MovementHelper.canWalkOn(ctx, new BlockPos(dest.x, src.y - 1, src.z))) {
-            return true;
-        }
-        //we are in a likely unwalkable corner, check for a supporting block
-        if (ctx.playerFeet().equals(new BetterBlockPos(src.x, src.y, dest.z))
-                || ctx.playerFeet().equals(new BetterBlockPos(dest.x, src.y, src.z))) {
-            return (MovementHelper.canWalkOn(ctx, new BetterBlockPos(x + offset, y, z + offset))
-                    || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x + offset, y, z - offset))
-                    || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x - offset, y, z + offset))
-                    || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x - offset, y, z - offset)));
-        }
-        return true;
-    }
-
-    @Override
-    public double calculateCost(CalculationContext context) {
-        MutableMoveResult result = new MutableMoveResult();
-        cost(context, src.x, src.y, src.z, dest.x, dest.z, result);
-        if (result.y != dest.y) {
-            return COST_INF; // doesn't apply to us, this position is incorrect
-        }
-        return result.cost;
-    }
-
-    @Override
-    protected Set<BetterBlockPos> calculateValidPositions() {
-        BetterBlockPos diagA = new BetterBlockPos(src.x, src.y, dest.z);
-        BetterBlockPos diagB = new BetterBlockPos(dest.x, src.y, src.z);
-        if (dest.y < src.y) {
-            return ImmutableSet.of(src, dest.above(), diagA, diagB, dest, diagA.below(), diagB.below());
-        }
-        if (dest.y > src.y) {
-            return ImmutableSet.of(src, src.above(), diagA, diagB, dest, diagA.above(), diagB.above());
-        }
-        return ImmutableSet.of(src, dest, diagA, diagB);
-    }
-
     public static void cost(CalculationContext context, int x, int y, int z, int destX, int destZ, MutableMoveResult res) {
-        if (!MovementHelper.canWalkThrough(context.bsi, destX, y + 1, destZ)) {
+        if (!MovementHelper.canWalkThrough(context, destX, y + 1, destZ)) {
             return;
         }
         BlockState destInto = context.get(destX, y, destZ);
+        BlockState fromDown;
         boolean ascend = false;
         BlockState destWalkOn;
         boolean descend = false;
-        if (!MovementHelper.canWalkThrough(context.bsi, destX, y, destZ, destInto)) {
+        boolean frostWalker = false;
+        if (!MovementHelper.canWalkThrough(context, destX, y, destZ, destInto)) {
             ascend = true;
-            if (!context.allowDiagonalAscend || !MovementHelper.canWalkThrough(context.bsi, x, y + 2, z) || !MovementHelper.canWalkOn(context.bsi, destX, y, destZ, destInto) || !MovementHelper.canWalkThrough(context.bsi, destX, y + 2, destZ)) {
+            if (!context.allowDiagonalAscend || !MovementHelper.canWalkThrough(context, x, y + 2, z) || !MovementHelper.canWalkOn(context, destX, y, destZ, destInto) || !MovementHelper.canWalkThrough(context, destX, y + 2, destZ)) {
                 return;
             }
             destWalkOn = destInto;
+            fromDown = context.get(x, y - 1, z);
         } else {
             destWalkOn = context.get(destX, y - 1, destZ);
-            if (!MovementHelper.canWalkOn(context.bsi, destX, y - 1, destZ, destWalkOn)) {
+            fromDown = context.get(x, y - 1, z);
+            boolean standingOnABlock = MovementHelper.mustBeSolidToWalkOn(context, x, y - 1, z, fromDown);
+            frostWalker = standingOnABlock && MovementHelper.canUseFrostWalker(context, destWalkOn);
+            if (!frostWalker && !MovementHelper.canWalkOn(context, destX, y - 1, destZ, destWalkOn)) {
                 descend = true;
-                if (!context.allowDiagonalDescend || !MovementHelper.canWalkOn(context.bsi, destX, y - 2, destZ) || !MovementHelper.canWalkThrough(context.bsi, destX, y - 1, destZ, destWalkOn)) {
+                if (!context.allowDiagonalDescend || !MovementHelper.canWalkOn(context, destX, y - 2, destZ) || !MovementHelper.canWalkThrough(context, destX, y - 1, destZ, destWalkOn)) {
                     return;
                 }
             }
+            frostWalker &= !context.assumeWalkOnWater; // do this after checking for descends because jesus can't prevent the water from freezing, it just prevents us from relying on the water freezing
         }
         double multiplier = WALK_ONE_BLOCK_COST;
         // For either possible soul sand, that affects half of our walking
         if (destWalkOn.getBlock() == Blocks.SOUL_SAND) {
             multiplier += (WALK_ONE_OVER_SOUL_SAND_COST - WALK_ONE_BLOCK_COST) / 2;
+        } else if (frostWalker) {
+            // frostwalker lets us walk on water without the penalty
         } else if (destWalkOn.getBlock() == Blocks.WATER) {
             multiplier += context.walkOnWaterOnePenalty * SQRT_2;
         }
-        Block fromDown = context.get(x, y - 1, z).getBlock();
-        if (fromDown == Blocks.LADDER || fromDown == Blocks.VINE) {
+        Block fromDownBlock = fromDown.getBlock();
+        if (fromDownBlock == Blocks.LADDER || fromDownBlock == Blocks.VINE) {
             return;
         }
-        if (fromDown == Blocks.SOUL_SAND) {
+        if (fromDownBlock == Blocks.SOUL_SAND) {
             multiplier += (WALK_ONE_OVER_SOUL_SAND_COST - WALK_ONE_BLOCK_COST) / 2;
         }
         BlockState cuttingOver1 = context.get(x, y - 1, destZ);
@@ -170,17 +127,17 @@ public class MovementDiagonal extends Movement {
         BlockState pb0 = context.get(x, y, destZ);
         BlockState pb2 = context.get(destX, y, z);
         if (ascend) {
-            boolean ATop = MovementHelper.canWalkThrough(context.bsi, x, y + 2, destZ);
-            boolean AMid = MovementHelper.canWalkThrough(context.bsi, x, y + 1, destZ);
-            boolean ALow = MovementHelper.canWalkThrough(context.bsi, x, y, destZ, pb0);
-            boolean BTop = MovementHelper.canWalkThrough(context.bsi, destX, y + 2, z);
-            boolean BMid = MovementHelper.canWalkThrough(context.bsi, destX, y + 1, z);
-            boolean BLow = MovementHelper.canWalkThrough(context.bsi, destX, y, z, pb2);
+            boolean ATop = MovementHelper.canWalkThrough(context, x, y + 2, destZ);
+            boolean AMid = MovementHelper.canWalkThrough(context, x, y + 1, destZ);
+            boolean ALow = MovementHelper.canWalkThrough(context, x, y, destZ, pb0);
+            boolean BTop = MovementHelper.canWalkThrough(context, destX, y + 2, z);
+            boolean BMid = MovementHelper.canWalkThrough(context, destX, y + 1, z);
+            boolean BLow = MovementHelper.canWalkThrough(context, destX, y, z, pb2);
             if ((!(ATop && AMid && ALow) && !(BTop && BMid && BLow)) // no option
                     || MovementHelper.avoidWalkingInto(pb0) // bad
                     || MovementHelper.avoidWalkingInto(pb2) // bad
-                    || (ATop && AMid && MovementHelper.canWalkOn(context.bsi, x, y, destZ, pb0)) // we could just ascend
-                    || (BTop && BMid && MovementHelper.canWalkOn(context.bsi, destX, y, z, pb2)) // we could just ascend
+                    || (ATop && AMid && MovementHelper.canWalkOn(context, x, y, destZ, pb0)) // we could just ascend
+                    || (BTop && BMid && MovementHelper.canWalkOn(context, destX, y, z, pb2)) // we could just ascend
                     || (!ATop && AMid && ALow) // head bonk A
                     || (!BTop && BMid && BLow)) { // head bonk B
                 return;
@@ -242,6 +199,58 @@ public class MovementDiagonal extends Movement {
         }
         res.x = destX;
         res.z = destZ;
+    }
+
+    @Override
+    public double calculateCost(CalculationContext context) {
+        MutableMoveResult result = new MutableMoveResult();
+        cost(context, src.x, src.y, src.z, dest.x, dest.z, result);
+        if (result.y != dest.y) {
+            return COST_INF; // doesn't apply to us, this position is incorrect
+        }
+        return result.cost;
+    }
+
+    @Override
+    protected Set<BetterBlockPos> calculateValidPositions() {
+        BetterBlockPos diagA = new BetterBlockPos(src.x, src.y, dest.z);
+        BetterBlockPos diagB = new BetterBlockPos(dest.x, src.y, src.z);
+        if (dest.y < src.y) {
+            return ImmutableSet.of(src, dest.above(), diagA, diagB, dest, diagA.below(), diagB.below());
+        }
+        if (dest.y > src.y) {
+            return ImmutableSet.of(src, src.above(), diagA, diagB, dest, diagA.above(), diagB.above());
+        }
+        return ImmutableSet.of(src, dest, diagA, diagB);
+    }
+
+    @Override
+    protected boolean safeToCancel(MovementState state) {
+        //too simple. backfill does not work after cornering with this
+        //return context.precomputedData.canWalkOn(ctx, ctx.playerFeet().down());
+        LocalPlayer player = ctx.player();
+        double offset = 0.25;
+        double x = player.position().x;
+        double y = player.position().y - 1;
+        double z = player.position().z;
+        //standard
+        if (ctx.playerFeet().equals(src)) {
+            return true;
+        }
+        //both corners are walkable
+        if (MovementHelper.canWalkOn(ctx, new BlockPos(src.x, src.y - 1, dest.z))
+                && MovementHelper.canWalkOn(ctx, new BlockPos(dest.x, src.y - 1, src.z))) {
+            return true;
+        }
+        //we are in a likely unwalkable corner, check for a supporting block
+        if (ctx.playerFeet().equals(new BetterBlockPos(src.x, src.y, dest.z))
+                || ctx.playerFeet().equals(new BetterBlockPos(dest.x, src.y, src.z))) {
+            return (MovementHelper.canWalkOn(ctx, new BetterBlockPos(x + offset, y, z + offset))
+                    || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x + offset, y, z - offset))
+                    || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x - offset, y, z + offset))
+                    || MovementHelper.canWalkOn(ctx, new BetterBlockPos(x - offset, y, z - offset)));
+        }
+        return true;
     }
 
     @Override

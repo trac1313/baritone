@@ -83,8 +83,7 @@ public class FindCommand extends Command {
                 .withColor(ChatFormatting.GRAY)
                 .withInsertion(positionText)
                 .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverComponent))
-        );
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverComponent)));
         return baseComponent;
     }
 

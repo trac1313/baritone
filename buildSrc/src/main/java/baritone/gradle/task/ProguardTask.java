@@ -59,27 +59,6 @@ public class ProguardTask extends BaritoneGradleTask {
         return extract;
     }
 
-    @Input
-    private String compType;
-
-    public String getCompType() {
-        return compType;
-    }
-
-    @TaskAction
-    protected void exec() throws Exception {
-        super.verifyArtifacts();
-
-        // "Haha brady why don't you make separate tasks"
-        processArtifact();
-        downloadProguard();
-        extractProguard();
-        generateConfigs();
-        proguardApi();
-        proguardStandalone();
-        cleanup();
-    }
-
     public String getUrl() {
         return url;
     }
@@ -94,6 +73,21 @@ public class ProguardTask extends BaritoneGradleTask {
 
     private boolean isMcJar(File f) {
         return this.getProject().getConfigurations().getByName(Constants.MINECRAFT_COMBINED_PROVIDER).getFiles().contains(f);
+    }
+
+    @TaskAction
+    protected void exec() throws Exception {
+        super.doFirst();
+        super.verifyArtifacts();
+
+        // "Haha brady why don't you make separate tasks"
+        processArtifact();
+        downloadProguard();
+        extractProguard();
+        generateConfigs();
+        proguardApi();
+        proguardStandalone();
+        cleanup();
     }
 
     private void downloadProguard() throws Exception {
@@ -215,24 +209,13 @@ public class ProguardTask extends BaritoneGradleTask {
         Determinizer.determinize(this.artifactPath.toString(), this.artifactUnoptimizedPath.toString());
     }
 
-    private Stream<File> acquireDependencies() {
-        return getProject().getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().findByName("main").getCompileClasspath().getFiles()
-                .stream()
-                .filter(File::isFile);
-    }
-
-    private void proguardApi() throws Exception {
-        runProguard(getTemporaryFile(compType + PROGUARD_API_CONFIG));
-        Determinizer.determinize(this.proguardOut.toString(), this.artifactApiPath.toString());
-    }
-
     private void generateConfigs() throws Exception {
         Files.copy(getRootRelativeFile(PROGUARD_CONFIG_TEMPLATE), getTemporaryFile(PROGUARD_CONFIG_DEST), REPLACE_EXISTING);
 
         // Setup the template that will be used to derive the API and Standalone configs
         List<String> template = Files.readAllLines(getTemporaryFile(PROGUARD_CONFIG_DEST));
-        template.add(0, "-injars " + this.artifactPath.toString());
-        template.add(1, "-outjars " + this.getTemporaryFile(PROGUARD_EXPORT_PATH));
+        template.add(0, "-injars '" + this.artifactPath.toString() + "'");
+        template.add(1, "-outjars '" + this.getTemporaryFile(PROGUARD_EXPORT_PATH) + "'");
 
         template.add(2, "-libraryjars  <java.home>/jmods/java.base.jmod(!**.jar;!module-info.class)");
         template.add(3, "-libraryjars  <java.home>/jmods/java.desktop.jmod(!**.jar;!module-info.class)");
@@ -264,7 +247,7 @@ public class ProguardTask extends BaritoneGradleTask {
         Files.createDirectories(this.getRootRelativeFile(PROGUARD_MAPPING_DIR));
 
         List<String> api = new ArrayList<>(template);
-        api.add(2, "-printmapping " + new File(this.getRootRelativeFile(PROGUARD_MAPPING_DIR).toFile(), "mappings-" + compType + "-api.txt"));
+        api.add(2, "-printmapping " + new File(this.getRootRelativeFile(PROGUARD_MAPPING_DIR).toFile(), "mappings-" + addCompTypeFirst("api.txt")));
 
         // API config doesn't require any changes from the changes that we made to the template
         Files.write(getTemporaryFile(compType + PROGUARD_API_CONFIG), api);
@@ -272,8 +255,19 @@ public class ProguardTask extends BaritoneGradleTask {
         // For the Standalone config, don't keep the API package
         List<String> standalone = new ArrayList<>(template);
         standalone.removeIf(s -> s.contains("# this is the keep api"));
-        standalone.add(2, "-printmapping " + new File(this.getRootRelativeFile(PROGUARD_MAPPING_DIR).toFile(), "mappings-" + compType + "-standalone.txt"));
+        standalone.add(2, "-printmapping " + new File(this.getRootRelativeFile(PROGUARD_MAPPING_DIR).toFile(), "mappings-" + addCompTypeFirst("standalone.txt")));
         Files.write(getTemporaryFile(compType + PROGUARD_STANDALONE_CONFIG), standalone);
+    }
+
+    private Stream<File> acquireDependencies() {
+        return getProject().getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().findByName("main").getCompileClasspath().getFiles()
+                .stream()
+                .filter(File::isFile);
+    }
+
+    private void proguardApi() throws Exception {
+        runProguard(getTemporaryFile(compType + PROGUARD_API_CONFIG));
+        Determinizer.determinize(this.proguardOut.toString(), this.artifactApiPath.toString());
     }
 
     private void cleanup() {
@@ -292,19 +286,21 @@ public class ProguardTask extends BaritoneGradleTask {
         this.extract = extract;
     }
 
-    public void setCompType(String compType) {
-        this.compType = compType;
-    }
-
     private void runProguard(Path config) throws Exception {
         // Delete the existing proguard output file. Proguard probably handles this already, but why not do it ourselves
         if (Files.exists(this.proguardOut)) {
             Files.delete(this.proguardOut);
         }
 
-        Path proguardJar = getTemporaryFile(PROGUARD_JAR);
+        // Make paths relative to work directory; fixes spaces in path to config, @"" doesn't work
+        Path workingDirectory = getTemporaryFile("");
+        Path proguardJar = workingDirectory.relativize(getTemporaryFile(PROGUARD_JAR));
+        config = workingDirectory.relativize(config);
+
+        // Honestly, if you still have spaces in your path at this point, you're SOL.
+
         Process p = new ProcessBuilder("java", "-jar", proguardJar.toString(), "@" + config.toString())
-                .directory(getTemporaryFile("").toFile()) // Set the working directory to the temporary folder]
+                .directory(workingDirectory.toFile()) // Set the working directory to the temporary folder]
                 .start();
 
         // We can't do output inherit process I/O with gradle for some reason and have it work, so we have to do this
