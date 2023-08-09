@@ -31,6 +31,7 @@ import baritone.pathing.movement.MovementState;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.pathing.MutableMoveResult;
 import com.google.common.collect.ImmutableSet;
+import java.util.Set;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
@@ -39,8 +40,6 @@ import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
-import java.util.Set;
-
 public class MovementDescend extends Movement {
 
     private int numTicks = 0;
@@ -48,6 +47,35 @@ public class MovementDescend extends Movement {
 
     public MovementDescend(IBaritone baritone, BetterBlockPos start, BetterBlockPos end) {
         super(baritone, start, end, new BetterBlockPos[]{end.above(2), end.above(), end}, end.below());
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+        numTicks = 0;
+        forceSafeMode = false;
+    }
+
+    /**
+     * Called by PathExecutor if needing safeMode can only be detected with knowledge about the next movement
+     */
+    public void forceSafeMode() {
+        forceSafeMode = true;
+    }
+
+    @Override
+    public double calculateCost(CalculationContext context) {
+        MutableMoveResult result = new MutableMoveResult();
+        cost(context, src.x, src.y, src.z, dest.x, dest.z, result);
+        if (result.y != dest.y) {
+            return COST_INF; // doesn't apply to us, this position is a fall not a descend
+        }
+        return result.cost;
+    }
+
+    @Override
+    protected Set<BetterBlockPos> calculateValidPositions() {
+        return ImmutableSet.of(src, dest.above(), dest);
     }
 
     public static void cost(CalculationContext context, int x, int y, int z, int destX, int destZ, MutableMoveResult res) {
@@ -185,35 +213,6 @@ public class MovementDescend extends Movement {
                 return false;
             }
         }
-    }
-
-    @Override
-    public double calculateCost(CalculationContext context) {
-        MutableMoveResult result = new MutableMoveResult();
-        cost(context, src.x, src.y, src.z, dest.x, dest.z, result);
-        if (result.y != dest.y) {
-            return COST_INF; // doesn't apply to us, this position is a fall not a descend
-        }
-        return result.cost;
-    }
-
-    @Override
-    protected Set<BetterBlockPos> calculateValidPositions() {
-        return ImmutableSet.of(src, dest.above(), dest);
-    }
-
-    @Override
-    public void reset() {
-        super.reset();
-        numTicks = 0;
-        forceSafeMode = false;
-    }
-
-    /**
-     * Called by PathExecutor if needing safeMode can only be detected with knowledge about the next movement
-     */
-    public void forceSafeMode() {
-        forceSafeMode = true;
     }
 
     @Override

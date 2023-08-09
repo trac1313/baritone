@@ -20,6 +20,8 @@ package baritone.gradle.task;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,34 +37,26 @@ import java.nio.file.Paths;
 class BaritoneGradleTask extends DefaultTask {
 
     protected static final String
-            PROGUARD_ZIP = "proguard.zip",
-            PROGUARD_JAR = "proguard.jar",
-            PROGUARD_CONFIG_TEMPLATE = "scripts/proguard.pro",
-            PROGUARD_CONFIG_DEST = "template.pro",
-            PROGUARD_API_CONFIG = "api.pro",
-            PROGUARD_STANDALONE_CONFIG = "standalone.pro",
-            PROGUARD_EXPORT_PATH = "proguard_out.jar",
-            PROGUARD_MAPPING_DIR = "mapping",
+            PROGUARD_ZIP                    = "proguard.zip",
+            PROGUARD_JAR                    = "proguard.jar",
+            PROGUARD_CONFIG_TEMPLATE        = "scripts/proguard.pro",
+            PROGUARD_CONFIG_DEST            = "template.pro",
+            PROGUARD_API_CONFIG             = "api.pro",
+            PROGUARD_STANDALONE_CONFIG      = "standalone.pro",
+            PROGUARD_EXPORT_PATH            = "proguard_out.jar",
+            PROGUARD_MAPPING_DIR            = "mapping",
 
-    ARTIFACT_STANDARD = "%s-%s.jar",
-            ARTIFACT_UNOPTIMIZED = "%s-unoptimized-%s.jar",
-            ARTIFACT_API = "%s-api-%s.jar",
-            ARTIFACT_STANDALONE = "%s-standalone-%s.jar";
+            ARTIFACT_STANDARD           = "%s-%s.jar",
+            ARTIFACT_UNOPTIMIZED        = "%s-unoptimized-%s.jar",
+            ARTIFACT_API                = "%s-api-%s.jar",
+            ARTIFACT_STANDALONE         = "%s-standalone-%s.jar";
 
     protected String artifactName, artifactVersion;
-    protected Path
-            artifactPath,
-            artifactUnoptimizedPath, artifactApiPath, artifactStandalonePath, // these are different for forge builds
-            proguardOut;
 
 
     @Input
     @Optional
     protected String compType = null;
-
-    public BaritoneGradleTask() {
-        this.artifactName = getProject().getRootProject().getProperties().get("archives_base_name").toString();
-    }
 
     public String getCompType() {
         return compType;
@@ -72,25 +66,16 @@ class BaritoneGradleTask extends DefaultTask {
         this.compType = compType;
     }
 
+
+    public BaritoneGradleTask() {
+        this.artifactName = getProject().getRootProject().getProperties().get("archives_base_name").toString();
+    }
+
     public void doFirst() {
         if (compType != null) {
             this.artifactVersion = compType + "-" + getProject().getVersion();
         } else {
             this.artifactVersion = getProject().getVersion().toString();
-        }
-
-        this.artifactPath = this.getBuildFile(formatVersion(ARTIFACT_STANDARD));
-
-        this.artifactUnoptimizedPath = this.getBuildFile(formatVersion(ARTIFACT_UNOPTIMIZED));
-        this.artifactApiPath = this.getBuildFile(formatVersion(ARTIFACT_API));
-        this.artifactStandalonePath = this.getBuildFile(formatVersion(ARTIFACT_STANDALONE));
-
-        this.proguardOut = this.getTemporaryFile(PROGUARD_EXPORT_PATH);
-    }
-
-    protected void verifyArtifacts() throws IllegalStateException {
-        if (!Files.exists(this.artifactPath)) {
-            throw new IllegalStateException("Artifact not found! Run build first! Missing file: " + this.artifactPath);
         }
     }
 

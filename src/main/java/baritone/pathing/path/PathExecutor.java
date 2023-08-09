@@ -37,7 +37,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.util.Tuple;
 import net.minecraft.world.phys.Vec3;
-
 import java.util.*;
 
 import static baritone.api.pathing.movement.MovementStatus.*;
@@ -254,19 +253,19 @@ public class PathExecutor implements IPathExecutor, Helper {
         return canCancel; // movement is in progress, but if it reports cancellable, PathingBehavior is good to cut onto the next path
     }
 
-    private static boolean skipNow(IPlayerContext ctx, IMovement current) {
-        double offTarget = Math.abs(current.getDirection().getX() * (current.getSrc().z + 0.5D - ctx.player().position().z)) + Math.abs(current.getDirection().getZ() * (current.getSrc().x + 0.5D - ctx.player().position().x));
-        if (offTarget > 0.1) {
-            return false;
+    private Tuple<Double, BlockPos> closestPathPos(IPath path) {
+        double best = -1;
+        BlockPos bestPos = null;
+        for (IMovement movement : path.movements()) {
+            for (BlockPos pos : ((Movement) movement).getValidPositions()) {
+                double dist = VecUtils.entityDistanceToCenter(ctx.player(), pos);
+                if (dist < best || best == -1) {
+                    best = dist;
+                    bestPos = pos;
+                }
+            }
         }
-        // we are centered
-        BlockPos headBonk = current.getSrc().subtract(current.getDirection()).above(2);
-        if (MovementHelper.fullyPassable(ctx, headBonk)) {
-            return true;
-        }
-        // wait 0.3
-        double flatDist = Math.abs(current.getDirection().getX() * (headBonk.getX() + 0.5D - ctx.player().position().x)) + Math.abs(current.getDirection().getZ() * (headBonk.getZ() + 0.5 - ctx.player().position().z));
-        return flatDist > 0.8;
+        return new Tuple<>(best, bestPos);
     }
 
     private boolean shouldPause() {
@@ -274,7 +273,7 @@ public class PathExecutor implements IPathExecutor, Helper {
         if (!current.isPresent()) {
             return false;
         }
-        if (!ctx.player().isOnGround()) {
+        if (!ctx.player().onGround()) {
             return false;
         }
         if (!MovementHelper.canWalkOn(ctx, ctx.playerFeet().below())) {
@@ -323,7 +322,7 @@ public class PathExecutor implements IPathExecutor, Helper {
      * @return Whether or not it was possible to snap to the current player feet
      */
     public boolean snipsnapifpossible() {
-        if (!ctx.player().isOnGround() && ctx.world().getFluidState(ctx.playerFeet()).isEmpty()) {
+        if (!ctx.player().onGround() && ctx.world().getFluidState(ctx.playerFeet()).isEmpty()) {
             // if we're falling in the air, and not in water, don't splice
             return false;
         } else {
@@ -341,74 +340,6 @@ public class PathExecutor implements IPathExecutor, Helper {
         pathPosition = index; // jump directly to current position
         clearKeys();
         return true;
-    }
-
-    private static boolean sprintableAscend(IPlayerContext ctx, MovementTraverse current, MovementAscend next, IMovement nextnext) {
-        if (!Baritone.settings().sprintAscends.value) {
-            return false;
-        }
-        if (!current.getDirection().equals(next.getDirection().below())) {
-            return false;
-        }
-        if (nextnext.getDirection().getX() != next.getDirection().getX() || nextnext.getDirection().getZ() != next.getDirection().getZ()) {
-            return false;
-        }
-        if (!MovementHelper.canWalkOn(ctx, current.getDest().below())) {
-            return false;
-        }
-        if (!MovementHelper.canWalkOn(ctx, next.getDest().below())) {
-            return false;
-        }
-        if (!next.toBreakCached.isEmpty()) {
-            return false; // it's breaking
-        }
-        for (int x = 0; x < 2; x++) {
-            for (int y = 0; y < 3; y++) {
-                BlockPos chk = current.getSrc().above(y);
-                if (x == 1) {
-                    chk = chk.offset(current.getDirection());
-                }
-                if (!MovementHelper.fullyPassable(ctx, chk)) {
-                    return false;
-                }
-            }
-        }
-        if (MovementHelper.avoidWalkingInto(ctx.world().getBlockState(current.getSrc().above(3)))) {
-            return false;
-        }
-        if (AltoClefSettings.getInstance().shouldAvoidWalkThroughForce(current.getSrc().above(3)) ||
-                AltoClefSettings.getInstance().shouldAvoidWalkThroughForce(current.getSrc().above(2))) {
-            return false;
-        }
-        return !MovementHelper.avoidWalkingInto(ctx.world().getBlockState(next.getDest().above(2))); // codacy smh my head
-    }
-
-    private static boolean canSprintFromDescendInto(IPlayerContext ctx, IMovement current, IMovement next) {
-        if (next instanceof MovementDescend && next.getDirection().equals(current.getDirection())) {
-            return true;
-        }
-        if (!MovementHelper.canWalkOn(ctx, current.getDest().offset(current.getDirection()))) {
-            return false;
-        }
-        if (next instanceof MovementTraverse && next.getDirection().equals(current.getDirection())) {
-            return true;
-        }
-        return next instanceof MovementDiagonal && Baritone.settings().allowOvershootDiagonalDescend.value;
-    }
-
-    private Tuple<Double, BlockPos> closestPathPos(IPath path) {
-        double best = -1;
-        BlockPos bestPos = null;
-        for (IMovement movement : path.movements()) {
-            for (BlockPos pos : ((Movement) movement).getValidPositions()) {
-                double dist = VecUtils.entityDistanceToCenter(ctx.player(), pos);
-                if (dist < best || best == -1) {
-                    best = dist;
-                    bestPos = pos;
-                }
-            }
-        }
-        return new Tuple<>(best, bestPos);
     }
 
     private boolean shouldSprintNextTick() {
@@ -579,6 +510,74 @@ public class PathExecutor implements IPathExecutor, Helper {
         return new Tuple<>(
                 new Vec3(flatDir.getX() * len + movement.getDest().x + 0.5, movement.getDest().y, flatDir.getZ() * len + movement.getDest().z + 0.5),
                 movement.getDest().offset(flatDir.getX() * (i - pathPosition), 0, flatDir.getZ() * (i - pathPosition)));
+    }
+
+    private static boolean skipNow(IPlayerContext ctx, IMovement current) {
+        double offTarget = Math.abs(current.getDirection().getX() * (current.getSrc().z + 0.5D - ctx.player().position().z)) + Math.abs(current.getDirection().getZ() * (current.getSrc().x + 0.5D - ctx.player().position().x));
+        if (offTarget > 0.1) {
+            return false;
+        }
+        // we are centered
+        BlockPos headBonk = current.getSrc().subtract(current.getDirection()).above(2);
+        if (MovementHelper.fullyPassable(ctx, headBonk)) {
+            return true;
+        }
+        // wait 0.3
+        double flatDist = Math.abs(current.getDirection().getX() * (headBonk.getX() + 0.5D - ctx.player().position().x)) + Math.abs(current.getDirection().getZ() * (headBonk.getZ() + 0.5 - ctx.player().position().z));
+        return flatDist > 0.8;
+    }
+
+    private static boolean sprintableAscend(IPlayerContext ctx, MovementTraverse current, MovementAscend next, IMovement nextnext) {
+        if (!Baritone.settings().sprintAscends.value) {
+            return false;
+        }
+        if (!current.getDirection().equals(next.getDirection().below())) {
+            return false;
+        }
+        if (nextnext.getDirection().getX() != next.getDirection().getX() || nextnext.getDirection().getZ() != next.getDirection().getZ()) {
+            return false;
+        }
+        if (!MovementHelper.canWalkOn(ctx, current.getDest().below())) {
+            return false;
+        }
+        if (!MovementHelper.canWalkOn(ctx, next.getDest().below())) {
+            return false;
+        }
+        if (!next.toBreakCached.isEmpty()) {
+            return false; // it's breaking
+        }
+        for (int x = 0; x < 2; x++) {
+            for (int y = 0; y < 3; y++) {
+                BlockPos chk = current.getSrc().above(y);
+                if (x == 1) {
+                    chk = chk.offset(current.getDirection());
+                }
+                if (!MovementHelper.fullyPassable(ctx, chk)) {
+                    return false;
+                }
+            }
+        }
+        if (MovementHelper.avoidWalkingInto(ctx.world().getBlockState(current.getSrc().above(3)))) {
+            return false;
+        }
+        if (AltoClefSettings.getInstance().shouldAvoidWalkThroughForce(current.getSrc().above(3)) ||
+                AltoClefSettings.getInstance().shouldAvoidWalkThroughForce(current.getSrc().above(2))) {
+            return false;
+        }
+        return !MovementHelper.avoidWalkingInto(ctx.world().getBlockState(next.getDest().above(2))); // codacy smh my head
+    }
+
+    private static boolean canSprintFromDescendInto(IPlayerContext ctx, IMovement current, IMovement next) {
+        if (next instanceof MovementDescend && next.getDirection().equals(current.getDirection())) {
+            return true;
+        }
+        if (!MovementHelper.canWalkOn(ctx, current.getDest().offset(current.getDirection()))) {
+            return false;
+        }
+        if (next instanceof MovementTraverse && next.getDirection().equals(current.getDirection())) {
+            return true;
+        }
+        return next instanceof MovementDiagonal && Baritone.settings().allowOvershootDiagonalDescend.value;
     }
 
     private void onChangeInPathPosition() {
