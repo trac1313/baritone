@@ -29,12 +29,13 @@ import baritone.utils.pathing.BetterWorldBorder;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EndPortalFrameBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
@@ -171,7 +172,8 @@ public class CalculationContext {
         if (isPossiblyProtected(x, y, z)) {
             return COST_INF;
         }
-        if (AltoClefSettings.getInstance().shouldAvoidBreaking(new BlockPos(x, y, z))) {
+        if (AltoClefSettings.getInstance().shouldAvoidBreaking(new BlockPos(x, y, z))
+                || current.getBlock() instanceof EndPortalFrameBlock) {
             return COST_INF;
         }
         return 1;

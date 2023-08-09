@@ -23,11 +23,11 @@ import baritone.api.utils.Helper;
 import baritone.utils.accessor.IEntityRenderManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import java.awt.*;
+
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.phys.AABB;
 import org.joml.Matrix4f;
-
-import java.awt.*;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -38,7 +38,7 @@ public interface IRenderer {
     IEntityRenderManager renderManager = (IEntityRenderManager) Helper.mc.getEntityRenderDispatcher();
     Settings settings = BaritoneAPI.getSettings();
 
-    float[] color = new float[]{1.0F, 1.0F, 1.0F, 255.0F};
+    float[] color = new float[] {1.0F, 1.0F, 1.0F, 255.0F};
 
     static void glColor(Color color, float alpha) {
         float[] colorComponents = color.getColorComponents(null);

@@ -40,12 +40,18 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.AirBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BonemealableBlock;
+import net.minecraft.world.level.block.CactusBlock;
+import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.NetherWartBlock;
+import net.minecraft.world.level.block.SugarCaneBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -297,7 +303,7 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
             }
         }
         for (Entity entity : ctx.entities()) {
-            if (entity instanceof ItemEntity && entity.isOnGround()) {
+            if (entity instanceof ItemEntity && entity.onGround()) {
                 ItemEntity ei = (ItemEntity) entity;
                 if (PICKUP_DROPPED.contains(ei.getItem().getItem())) {
                     // +0.1 because of farmland's 0.9375 dummy height lol

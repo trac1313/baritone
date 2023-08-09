@@ -21,12 +21,12 @@ import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Registry;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
