@@ -19,14 +19,12 @@ package baritone.launch.mixins;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
-import baritone.api.event.events.ChatEvent;
 import baritone.api.event.events.PlayerUpdateEvent;
 import baritone.api.event.events.SprintStateEvent;
 import baritone.api.event.events.type.EventState;
 import baritone.behavior.LookBehavior;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Abilities;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -45,31 +43,14 @@ public class MixinClientPlayerEntity {
             method = "tick",
             at = @At(
                     value = "INVOKE",
-                    target = "net/minecraft/client/player/LocalPlayer.isPassenger()Z",
-                    shift = At.Shift.BY,
-                    by = -3
+                    target = "net/minecraft/client/player/AbstractClientPlayer.tick()V",
+                    shift = At.Shift.AFTER
             )
     )
     private void onPreUpdate(CallbackInfo ci) {
         IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((LocalPlayer) (Object) this);
         if (baritone != null) {
             baritone.getGameEventHandler().onPlayerUpdate(new PlayerUpdateEvent(EventState.PRE));
-        }
-    }
-
-    @Inject(
-            method = "tick",
-            at = @At(
-                    value = "INVOKE",
-                    target = "net/minecraft/client/player/LocalPlayer.sendPosition()V",
-                    shift = At.Shift.BY,
-                    by = 2
-            )
-    )
-    private void onPostUpdate(CallbackInfo ci) {
-        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((LocalPlayer) (Object) this);
-        if (baritone != null) {
-            baritone.getGameEventHandler().onPlayerUpdate(new PlayerUpdateEvent(EventState.POST));
         }
     }
 
@@ -123,5 +104,20 @@ public class MixinClientPlayerEntity {
         if (baritone != null) {
             ((LookBehavior) baritone.getLookBehavior()).pig();
         }
+    }
+
+    @Redirect(
+            method = "aiStep",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/player/LocalPlayer;tryToStartFallFlying()Z"
+            )
+    )
+    private boolean tryToStartFallFlying(final LocalPlayer instance) {
+        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer(instance);
+        if (baritone != null && baritone.getPathingBehavior().isPathing()) {
+            return false;
+        }
+        return instance.tryToStartFallFlying();
     }
 }

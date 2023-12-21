@@ -19,6 +19,7 @@ package baritone.process;
 
 import baritone.Baritone;
 import baritone.altoclef.AltoClefSettings;
+import baritone.api.BaritoneAPI;
 import baritone.api.pathing.goals.*;
 import baritone.api.process.IMineProcess;
 import baritone.api.process.PathingCommand;
@@ -322,6 +323,26 @@ public final class MineProcess extends BaritoneProcessHelper implements IMinePro
             int zDiff = z - this.z;
             return GoalBlock.calculate(xDiff, yDiff < -1 ? yDiff + 2 : yDiff == -1 ? 0 : yDiff, zDiff);
         }
+
+        @Override
+        public boolean equals(Object o) {
+            return super.equals(o);
+        }
+
+        @Override
+        public int hashCode() {
+            return super.hashCode() * 393857768;
+        }
+
+        @Override
+        public String toString() {
+            return String.format(
+                    "GoalThreeBlocks{x=%s,y=%s,z=%s}",
+                    SettingsUtil.maybeCensor(x),
+                    SettingsUtil.maybeCensor(y),
+                    SettingsUtil.maybeCensor(z)
+            );
+        }
     }
 
     public List<BlockPos> droppedItemsScan() {
@@ -401,7 +422,7 @@ public final class MineProcess extends BaritoneProcessHelper implements IMinePro
                     // is an x-ray and it'll get caught
                     if (filter.has(bsi.get0(x, y, z))) {
                         BlockPos pos = new BlockPos(x, y, z);
-                        if ((Baritone.settings().legitMineIncludeDiagonals.value && knownOreLocations.stream().anyMatch(ore -> ore.distSqr(pos) <= 2 /* sq means this is pytha dist <= sqrt(2) */)) || RotationUtils.reachable(ctx.player(), pos, fakedBlockReachDistance).isPresent()) {
+                        if ((Baritone.settings().legitMineIncludeDiagonals.value && knownOreLocations.stream().anyMatch(ore -> ore.distSqr(pos) <= 2 /* sq means this is pytha dist <= sqrt(2) */)) || RotationUtils.reachable(ctx, pos, fakedBlockReachDistance).isPresent()) {
                             knownOreLocations.add(pos);
                         }
                     }
@@ -441,6 +462,8 @@ public final class MineProcess extends BaritoneProcessHelper implements IMinePro
 
                 .filter(pos -> pos.getY() >= Baritone.settings().minYLevelWhileMining.value + ctx.world.dimensionType().minY())
 
+                .filter(pos -> pos.getY() <= Baritone.settings().maxYLevelWhileMining.value)
+
                 .filter(pos -> !blacklist.contains(pos))
 
                 .sorted(Comparator.comparingDouble(ctx.getBaritone().getPlayerContext().player().blockPosition()::distSqr))
@@ -469,8 +492,9 @@ public final class MineProcess extends BaritoneProcessHelper implements IMinePro
 
 
     public static boolean plausibleToBreak(CalculationContext ctx, BlockPos pos) {
-        if (ctx.get(pos).getBlock() instanceof EndPortalFrameBlock
-                || ctx.get(pos).getBlock() == Blocks.LAVA){
+        if (ctx.get(pos).getBlock() instanceof EndPortalFrameBlock ||
+                ctx.get(pos).getBlock() instanceof EndPortalBlock ||
+                ctx.get(pos).getBlock() == Blocks.LAVA){
             return true;
         }
         if (MovementHelper.getMiningDurationTicks(ctx, pos.getX(), pos.getY(), pos.getZ(), ctx.bsi.get0(pos), true) >= COST_INF) {

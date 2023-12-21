@@ -33,7 +33,6 @@ import baritone.utils.ToolSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.piston.MovingPistonBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -52,7 +51,6 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import static baritone.pathing.movement.Movement.HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP;
@@ -64,6 +62,7 @@ import static baritone.pathing.precompute.Ternary.*;
  * @author leijurv
  */
 public interface MovementHelper extends ActionCosts, Helper {
+
     static boolean avoidBreaking(BlockStateInterface bsi, int x, int y, int z, BlockState state) {
         if (bsi.get0(x, y + 1, z).getBlock() instanceof EndPortalFrameBlock){
             return true;
@@ -154,7 +153,7 @@ public interface MovementHelper extends ActionCosts, Helper {
         if (block instanceof AirBlock) {
             return YES;
         }
-        if (block instanceof BaseFireBlock || block == Blocks.TRIPWIRE || block == Blocks.COBWEB || block == Blocks.COCOA || block instanceof AbstractSkullBlock || block == Blocks.BUBBLE_COLUMN || block instanceof ShulkerBoxBlock || block instanceof SlabBlock || block instanceof TrapDoorBlock || block == Blocks.HONEY_BLOCK || block == Blocks.END_ROD || block == Blocks.SWEET_BERRY_BUSH || block == Blocks.POINTED_DRIPSTONE || block instanceof AmethystClusterBlock || block instanceof AzaleaBlock) {
+        if (block instanceof BaseFireBlock || block == Blocks.TRIPWIRE || block == Blocks.COBWEB || block == Blocks.END_PORTAL || block == Blocks.COCOA || block instanceof AbstractSkullBlock || block == Blocks.BUBBLE_COLUMN || block instanceof ShulkerBoxBlock || block instanceof SlabBlock || block instanceof TrapDoorBlock || block == Blocks.HONEY_BLOCK || block == Blocks.END_ROD || block == Blocks.SWEET_BERRY_BUSH || block == Blocks.POINTED_DRIPSTONE || block instanceof AmethystClusterBlock || block instanceof AzaleaBlock) {
             return NO;
         }
         if (block == Blocks.BIG_DRIPLEAF) {
@@ -206,6 +205,7 @@ public interface MovementHelper extends ActionCosts, Helper {
 
     static boolean canWalkThroughPosition(BlockStateInterface bsi, int x, int y, int z, BlockState state) {
         Block block = state.getBlock();
+
         if (block instanceof CarpetBlock) {
             return canWalkOn(bsi, x, y - 1, z);
         }
@@ -266,6 +266,7 @@ public interface MovementHelper extends ActionCosts, Helper {
                 || block instanceof SnowLayerBlock
                 || !state.getFluidState().isEmpty()
                 || block instanceof TrapDoorBlock
+                || block instanceof EndPortalBlock
                 || block instanceof SkullBlock
                 || block instanceof ShulkerBoxBlock) {
             return NO;
@@ -681,9 +682,9 @@ public interface MovementHelper extends ActionCosts, Helper {
 
     static void moveTowards(IPlayerContext ctx, MovementState state, BlockPos pos) {
         state.setTarget(new MovementTarget(
-                new Rotation(RotationUtils.calcRotationFromVec3d(ctx.playerHead(),
+                RotationUtils.calcRotationFromVec3d(ctx.playerHead(),
                         VecUtils.getBlockPosCenter(pos),
-                        ctx.playerRotations()).getYaw(), ctx.player().getXRot()),
+                        ctx.playerRotations()).withPitch(ctx.playerRotations().getPitch()),
                 false
         )).setInput(Input.MOVE_FORWARD, true);
     }
@@ -793,7 +794,8 @@ public interface MovementHelper extends ActionCosts, Helper {
                 double faceY = (placeAt.getY() + against1.getY() + 0.5D) * 0.5D;
                 double faceZ = (placeAt.getZ() + against1.getZ() + 1.0D) * 0.5D;
                 Rotation place = RotationUtils.calcRotationFromVec3d(wouldSneak ? RayTraceUtils.inferSneakingEyePosition(ctx.player()) : ctx.playerHead(), new Vec3(faceX, faceY, faceZ), ctx.playerRotations());
-                HitResult res = RayTraceUtils.rayTraceTowards(ctx.player(), place, ctx.playerController().getBlockReachDistance(), wouldSneak);
+                Rotation actual = baritone.getLookBehavior().getAimProcessor().peekRotation(place);
+                HitResult res = RayTraceUtils.rayTraceTowards(ctx.player(), actual, ctx.playerController().getBlockReachDistance(), wouldSneak);
                 if (res != null && res.getType() == HitResult.Type.BLOCK && ((BlockHitResult) res).getBlockPos().equals(against1) && ((BlockHitResult) res).getBlockPos().relative(((BlockHitResult) res).getDirection()).equals(placeAt)) {
                     state.setTarget(new MovementTarget(place, true));
                     found = true;

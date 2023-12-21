@@ -1187,12 +1187,12 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             }
             // <toxic cloud>
             BlockState itemState = ((BlockItem) stack.getItem())
-                .getBlock()
-                .getStateForPlacement(
-                    new BlockPlaceContext(
-                        new UseOnContext(ctx.world(), ctx.player(), InteractionHand.MAIN_HAND, stack, new BlockHitResult(new Vec3(ctx.player().position().x, ctx.player().position().y, ctx.player().position().z), Direction.UP, ctx.playerFeet(), false)) {}
-                    )
-                );
+                    .getBlock()
+                    .getStateForPlacement(
+                            new BlockPlaceContext(
+                                    new UseOnContext(ctx.world(), ctx.player(), InteractionHand.MAIN_HAND, stack, new BlockHitResult(new Vec3(ctx.player().position().x, ctx.player().position().y, ctx.player().position().z), Direction.UP, ctx.playerFeet(), false)) {}
+                            )
+                    );
             if (itemState != null) {
                 result.add(itemState);
             } else {
@@ -1205,9 +1205,9 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
 
     public static final Set<Property<?>> orientationProps =
             ImmutableSet.of(
-                RotatedPillarBlock.AXIS, HorizontalDirectionalBlock.FACING,
+                    RotatedPillarBlock.AXIS, HorizontalDirectionalBlock.FACING,
                     StairBlock.FACING, StairBlock.HALF, StairBlock.SHAPE,
-                PipeBlock.NORTH, PipeBlock.EAST, PipeBlock.SOUTH, PipeBlock.WEST, PipeBlock.UP,
+                    PipeBlock.NORTH, PipeBlock.EAST, PipeBlock.SOUTH, PipeBlock.WEST, PipeBlock.UP,
                     TrapDoorBlock.OPEN, TrapDoorBlock.HALF
             );
 

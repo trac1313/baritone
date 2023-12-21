@@ -273,8 +273,6 @@ public class MovementTraverse extends Movement {
             BlockPos into = dest.subtract(src).offset(dest);
             BlockState intoBelow = BlockStateInterface.get(ctx, into);
             BlockState intoAbove = BlockStateInterface.get(ctx, into.above());
-            boolean avoidBelow = MovementHelper.avoidWalkingInto(intoBelow) || AltoClefSettings.getInstance().shouldAvoidWalkThroughForce(into);
-            boolean avoidAbove = MovementHelper.avoidWalkingInto(intoAbove) || AltoClefSettings.getInstance().shouldAvoidWalkThroughForce(into.above());
             if (wasTheBridgeBlockAlwaysThere && (!MovementHelper.isLiquid(ctx, feet) || Baritone.settings().sprintInWater.value) && (!MovementHelper.avoidWalkingInto(intoBelow) || MovementHelper.isWater(intoBelow)) && !MovementHelper.avoidWalkingInto(intoAbove)) {
                 state.setInput(Input.SPRINT, true);
             }

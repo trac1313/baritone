@@ -20,10 +20,10 @@ import baritone.gradle.task.ProguardTask
 //import baritone.gradle.task.TweakerJsonAssembler
 
 plugins {
-    id "com.github.johnrengelman.shadow" version "7.0.0"
+    id "com.github.johnrengelman.shadow" version "8.0.0"
 }
 
-minecraft {
+unimined.minecraft {
     runs.client = {
         mainClass = "net.minecraft.launchwrapper.Launch"
         args.addAll(["--tweakClass", "baritone.launch.BaritoneTweaker"])
@@ -66,18 +66,18 @@ dependencies {
 
 shadowJar {
     configurations = [project.configurations.shadowCommon]
-    classifier "dev-shadow"
+    archiveClassifier.set "dev-shadow"
 }
 
 
 remapJar {
     inputFile.set shadowJar.archiveFile
     dependsOn shadowJar
-    classifier null
+    archiveClassifier.set null
 }
 
 jar {
-    classifier "dev"
+    archiveClassifier.set "dev"
 
     preserveFileTimestamps = false
     reproducibleFileOrder = true
@@ -90,5 +90,28 @@ jar {
                 'Implementation-Title': 'Baritone',
                 'Implementation-Version': version,
         )
+    }
+}
+
+task proguard(type: ProguardTask) {
+    url 'https://github.com/Guardsquare/proguard/releases/download/v7.2.1/proguard-7.2.1.zip'
+    extract 'proguard-7.2.1/lib/proguard.jar'
+}
+
+task createDist(type: CreateDistTask, dependsOn: proguard)
+
+build.finalizedBy(createDist)
+
+publishing {
+    publications {
+        mavenCommon(MavenPublication) {
+            artifactId = rootProject.archives_base_name
+            from components.java
+        }
+    }
+
+    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+    repositories {
+        // Add repositories to publish to here.
     }
 }
