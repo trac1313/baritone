@@ -34,7 +34,6 @@ import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.phys.Vec3;
-
 import java.util.*;
 
 import static baritone.utils.BlockStateInterface.getFromChunk;
