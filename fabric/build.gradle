@@ -91,14 +91,28 @@ build.finalizedBy(createDist)
 
 publishing {
     publications {
-        mavenFabric(MavenPublication) {
-            artifactId = rootProject.archives_base_name + "-" + project.name
-            from components.java
+        maven(MavenPublication) {
+            groupId "meteordevelopment"
+            artifactId "baritone"
+
+            artifact "../dist/baritone-api-fabric-" + version + ".jar"
         }
     }
 
     // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
     repositories {
-        // Add repositories to publish to here.
+        maven {
+            name = "meteor-maven"
+            url = "https://maven.meteordev.org/snapshots"
+
+            credentials {
+                username = System.getenv("MAVEN_METEOR_ALIAS")
+                password = System.getenv("MAVEN_METEOR_TOKEN")
+            }
+
+            authentication {
+                basic(BasicAuthentication)
+            }
+        }
     }
 }
