@@ -27,7 +27,7 @@ import net.minecraft.world.phys.Vec3;
  * @since 8/25/2018
  */
 public final class RayTraceUtils {
-
+    public static ClipContext.Fluid fluidHandling = ClipContext.Fluid.NONE;
     private RayTraceUtils() {}
 
     /**
@@ -58,7 +58,7 @@ public final class RayTraceUtils {
                 direction.y * blockReachDistance,
                 direction.z * blockReachDistance
         );
-        return entity.level().clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, entity));
+        return entity.level().clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, fluidHandling, entity));
     }
 
     public static Vec3 inferSneakingEyePosition(Entity entity) {
