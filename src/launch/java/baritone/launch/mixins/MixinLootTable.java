@@ -15,15 +15,20 @@
  * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package baritone.launch;
+package baritone.launch.mixins;
 
-import org.spongepowered.asm.mixin.Mixins;
-import org.spongepowered.asm.mixin.connect.IMixinConnector;
+import baritone.api.utils.accessor.ILootTable;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.LootTable;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Invoker;
 
-public class BaritoneMixinConnector implements IMixinConnector {
+@Mixin(LootTable.class)
+public abstract class MixinLootTable implements ILootTable {
 
-    @Override
-    public void connect() {
-        Mixins.addConfiguration("mixins.baritone.json");
-    }
+    @Invoker
+    public abstract ObjectArrayList<ItemStack> invokeGetRandomItems(LootContext context);
+
 }
